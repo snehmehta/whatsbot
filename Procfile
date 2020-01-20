@@ -1,0 +1,1 @@
+web: gunicorn te:app --log-file=-

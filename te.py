@@ -1,12 +1,18 @@
 import datetime
-from datetime import timedelta
 import pickle
+import datefinder
 import os.path
+import random 
+import string
+import json
+
+from flask import Flask,request
+from datetime import timedelta
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
-import datefinder
-from flask import Flask
+from twilio.twiml.messaging_response import MessagingResponse
+
 from IPython.core.debugger import set_trace
 
 app = Flask(__name__)
@@ -35,12 +41,26 @@ def get_event():
     return str(event_list)
 
 
-@app.route('/eventCreate')
-def create_event(start_time_str, summary, duration=30, description=None, location=None):
-    matches = list(datefinder.find_dates(start_time_str))
-    if len(matches):
-        start_time = matches[0]
-        end_time = start_time + timedelta(minutes=duration)
+@app.route('/eventCreate',methods=['Post'])
+def create_event():
+    msg = request.form.get('Memory')
+    temp = json.loads(msg)
+    time = temp['twilio']['collected_data']['schedule_appt']['answers']['appt_time']['answer']
+    date =  temp['twilio']['collected_data']['schedule_appt']['answers']['appt_date']['answer']
+    phone_number =  temp['twilio']['collected_data']['schedule_appt']['answers']['appt_phone_number']['answer']
+    
+    start_time_str = date + " " + time
+    token = random_token()
+    summary = "Appointment " + str(phone_number) + str(token)
+    
+    duration=30
+    description=None
+    location=None
+
+    # matches = list(datefinder.find_dates(start_time_str))
+    # if len(matches):
+    start_time = datetime.datetime.strptime(start_time_str, '%Y-%m-%d %H:%M')
+    end_time = start_time + timedelta(minutes=duration)
 
     event = {
         'summary': summary,
@@ -61,11 +81,17 @@ def create_event(start_time_str, summary, duration=30, description=None, locatio
             ],
         },
     }
-    return service.events().insert(calendarId='primary', body=event).execute()
+    iscompleted = service.events().insert(calendarId='primary', body=event).execute()
+    if iscompleted:
+        return "Completed"
+    else:
+        return "Failed"  
 
+def random_token():
+    return ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(6))
 
 if __name__ == "__main__":
-
+    
     SCOPES = ['https://www.googleapis.com/auth/calendar']
 
     creds = None
@@ -85,4 +111,5 @@ if __name__ == "__main__":
             pickle.dump(creds, token)
 
     service = build('calendar', 'v3', credentials=creds)
+
     app.run(debug=True)
