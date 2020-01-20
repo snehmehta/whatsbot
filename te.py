@@ -16,6 +16,29 @@ from twilio.twiml.messaging_response import MessagingResponse
 # from IPython.core.debugger import set_trace
 
 app = Flask(__name__)
+
+
+SCOPES = ['https://www.googleapis.com/auth/calendar']
+
+creds = None
+if os.path.exists('token.pickle'):
+    with open('token.pickle', 'rb') as token:
+        creds = pickle.load(token)
+# If there are no (valid) credentials available, let the user log in.
+if not creds or not creds.valid:
+    if creds and creds.expired and creds.refresh_token:
+        creds.refresh(Request())
+    else:
+        flow = InstalledAppFlow.from_client_secrets_file(
+            'credentials.json', SCOPES)
+        creds = flow.run_local_server(port=0)
+    # Save the credentials for the next run
+    with open('token.pickle', 'wb') as token:
+        pickle.dump(creds, token)
+
+service = build('calendar', 'v3', credentials=creds)
+
+
 # Root Page
 @app.route('/')
 def index():
@@ -91,25 +114,4 @@ def random_token():
     return ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(6))
 
 if __name__ == "__main__":
-    
-    SCOPES = ['https://www.googleapis.com/auth/calendar']
-
-    creds = None
-    if os.path.exists('token.pickle'):
-        with open('token.pickle', 'rb') as token:
-            creds = pickle.load(token)
-    # If there are no (valid) credentials available, let the user log in.
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            flow = InstalledAppFlow.from_client_secrets_file(
-                'credentials.json', SCOPES)
-            creds = flow.run_local_server(port=0)
-        # Save the credentials for the next run
-        with open('token.pickle', 'wb') as token:
-            pickle.dump(creds, token)
-
-    service = build('calendar', 'v3', credentials=creds)
-
     app.run(debug=True)
