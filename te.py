@@ -2,17 +2,15 @@ import datetime
 import pickle
 import datefinder
 import os.path
-import random 
-import string
 import json
 
-from flask import Flask,request
+from flask import Flask,request,jsonify,make_response,Response
 from datetime import timedelta
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from twilio.twiml.messaging_response import MessagingResponse
-
+import helper
 # from IPython.core.debugger import set_trace
 
 app = Flask(__name__)
@@ -45,7 +43,7 @@ def index():
     return '<H1>Calendar</H1'
 
 # Call the Calendar API
-@app.route('/eventList')
+@app.route('/eventList',methods=['POST'])
 def get_event():
     now = datetime.datetime.utcnow().isoformat() + 'Z'  # 'Z' indicates UTC time
     event_list = []
@@ -60,10 +58,9 @@ def get_event():
     for event in events:
         start = event['start'].get('dateTime', event['start'].get('date'))
         event_list.append(event['summary'])
-
-    return str(event_list)
-
-
+    
+    return make_response(jsonify(helper.create_say_response("hye")),200)
+ 
 @app.route('/eventCreate',methods=['Post'])
 def create_event():
     msg = request.form.get('Memory')
@@ -71,10 +68,11 @@ def create_event():
     time = temp['twilio']['collected_data']['schedule_appt']['answers']['appt_time']['answer']
     date =  temp['twilio']['collected_data']['schedule_appt']['answers']['appt_date']['answer']
     phone_number =  temp['twilio']['collected_data']['schedule_appt']['answers']['appt_phone_number']['answer']
-    
+    cur_phone = request.form.get('UserIdentifier')
+
     start_time_str = date + " " + time
-    token = random_token()
-    summary = "Appointment " + str(phone_number) + str(token)
+    token = helper.random_token()
+    summary = "Appointment " + str(phone_number) + " " + str(token)
     
     duration=30
     description=None
@@ -106,12 +104,11 @@ def create_event():
     }
     iscompleted = service.events().insert(calendarId='primary', body=event).execute()
     if iscompleted:
-        return "Completed"
+        message = "Your token is : " + token
+        return make_response(jsonify(helper.create_say_response(message)),200)
     else:
-        return "Failed"  
+        return make_response(jsonify(helper.create_say_response("Sorry failed")),200)
 
-def random_token():
-    return ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(6))
 
 if __name__ == "__main__":
     app.run(debug=True)
