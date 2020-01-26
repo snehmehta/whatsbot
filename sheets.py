@@ -1,62 +1,52 @@
-import gspread
-import datetime
-import string
+import datetime 
 
-from oauth2client.service_account import ServiceAccountCredentials
+class Gspread():
 
-scope = ["https://www.googleapis.com/auth/drive"]
+    def __init__(self,sheet):
+        self.sheet = sheet
 
-creds = ServiceAccountCredentials.from_json_keyfile_name(
-    "E:\\whatsbot\\New folder\\Whatsbot-58a18b101200.json", scopes=scope)
+        self.part_threshold = [10, 10, 10, 10]
 
-client = gspread.authorize(creds)
-all_sheet = client.open("Whatsbot appointment")
-sheet = all_sheet.worksheet("Sheet1")
+        self.part_dict = {
+            "part1": "C",
+            "part2": "D",
+            "part3": "E",
+            "part4": "F",
+        }
 
-part_threshold = [10, 10, 10, 10]
+    def get_row_col(self,passed_date=None):
 
-part_dict = {
-    "part1": "C",
-    "part2": "D",
-    "part3": "E",
-    "part4": "F",
-}
+        if passed_date is None:
+            today = datetime.date.today()
+            cell = self.sheet.find(str(today))
+            return cell
+        else:
+            # Find date which is passed 
+            print("working on it")
+            pass
 
+    def get_slots(self):
 
-def get_row_col(passed_date=None):
+        ls = ["8-11", "11-2", "2-5", "5-8"]
+        cell = self.get_row_col()
+        parts_list = self.sheet.row_values(cell.row)[2:6]
+        slots_list = []
+        for i in enumerate(parts_list):
+            if self.part_threshold[i[0]] > int(i[1]):
+                slots_list.append(ls[i[0]])
 
-    if passed_date is None:
-        today = datetime.date.today()
-        cell = sheet.find(str(today))
-        return cell
-    else:
-        # Find date which is passed 
-        print("working on it")
-        pass
-
-def get_slots():
-
-    ls = ["8-11", "11-2", "2-5", "5-8"]
-    cell = get_row_col()
-    parts_list = sheet.row_values(cell.row)[2:6]
-    slots_list = []
-    for i in enumerate(parts_list):
-        if part_threshold[i[0]] > int(i[1]):
-            slots_list.append(ls[i[0]])
-
-    return slots_list
+        return slots_list
 
 
-def add_appointment(part,details,barber):
-    # Also add which barber 
-    cell = get_row_col()
-    _row = cell.row if barber == "1" else cell.row + 1
+    def add_appointment(self,part,details,barber):
+        # Also add which barber 
+        cell = self.get_row_col()
+        _row = cell.row if barber == "1" else cell.row + 1
 
-    part_cell = part_dict[part] + str(_row)
-    parts_1 = sheet.acell(part_cell).value
+        part_cell = self.part_dict[part] + str(_row)
+        parts_1 = self.sheet.acell(part_cell).value
 
-    len_row = sheet.row_values(_row)
+        len_row = self.sheet.row_values(_row)
 
-    sheet.update_cell(_row, (len(len_row) + 1), details)
-    sheet.update_acell(part_cell, str(int(parts_1)+1))
-add_appointment("part1","Awesome","1")
+        self.sheet.update_cell(_row, (len(len_row) + 1), details)
+        self.sheet.update_acell(part_cell, str(int(parts_1)+1))
