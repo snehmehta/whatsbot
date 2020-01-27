@@ -58,14 +58,14 @@ def index():
 #Avaliable time slots
 @app.route('/timeslots',methods=['POST','GET'])
 def timeslots():
-    msg = request.form.get('Memory')
-    temp = json.loads(msg)
-    barber = temp['twilio']['collected_data']['schedule_appt']['answers']['booking_selection_1']['answer']
-    date = temp['twilio']['collected_data']['schedule_appt']['answers']['booking_selection_2']['answer']
-
+    # msg = request.form.get('Memory')
+    # temp = json.loads(msg)
+    # barber = temp['twilio']['collected_data']['schedule_appt']['answers']['booking_selection_1']['answer']
+    # date = temp['twilio']['collected_data']['schedule_appt']['answers']['booking_selection_2']['answer']
+    date = "2020-01-27"
     gsp = Gspread(sheet)
     available_slot = gsp.get_slots(date)
-    available_slot = [(str(i[0] + 1) +"  "+ i[1] + "\n") for i in enumerate(available_slot)]
+    available_slot = [("Enter" + str(i[0] + 1) +"  "+ i[1] + "\n") for i in enumerate(available_slot)]
     slots = "".join(available_slot)
     return make_response(jsonify(helper.create_say_redirect_response(slots,"task://booking_part_1")),200)
 
@@ -96,7 +96,7 @@ def create_event():
 
     msg = request.form.get('Memory')
     temp = json.loads(msg)
-    # set_trace()
+
     date =  temp['twilio']['collected_data']['schedule_appt']['answers']['booking_selection_2']['answer']
     part_number = temp['twilio']['collected_data']['collect_timeslot']['answers']['selected_timeSlot']['answer']
     barber = temp['twilio']['collected_data']['schedule_appt']['answers']['booking_selection_1']['answer']
@@ -105,22 +105,15 @@ def create_event():
 
     part_selected = "part" + part_number 
     gsp = Gspread(sheet)
-    start_time = gsp.add_appointment(part_selected,token,barber,date)
 
-    # time = str(date_time.time())
-    # date = str(date_time.date())
-    # start_time_str = date + " " + time
-    # print()
+    start_time = gsp.add_appointment(part_selected,token,barber,date)
+    end_time = start_time + timedelta(minutes=duration)
+
     summary = "Appointment " + " " + str(token)
     
     duration=20
     description=None
     location=None
-
-    # matches = list(datefinder.find_dates(start_time_str))
-    # if len(matches):
-    # start_time = datetime.datetime.strptime(start_time_str, '%Y-%m-%d %H:%M')
-    end_time = start_time + timedelta(minutes=duration)
 
     event = {
         'summary': summary,
@@ -143,7 +136,7 @@ def create_event():
     }
     iscompleted = service.events().insert(calendarId='primary', body=event).execute()
     if iscompleted:
-        message = "Your token is : " + token + "\nYour time is :" + str(start_time.time()) 
+        message = "Your token is : " + token + "\nYour time is :" + str(start_time.time()) + "\n Date is : " + date
         return make_response(jsonify(helper.create_say_response(message)),200)
     else:
         return make_response(jsonify(helper.create_say_response("Sorry failed")),200)

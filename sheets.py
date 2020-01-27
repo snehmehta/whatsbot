@@ -1,6 +1,5 @@
 import datetime
-
-
+from IPython.core.debugger import set_trace
 class Gspread():
 
     def __init__(self, sheet, duration=20):
@@ -20,7 +19,7 @@ class Gspread():
             "part3": "14",
             "part4": "17",
         }
-
+        self.time_range = [11,14,17,20]
     def get_row_col(self, passed_date=None):
 
         if passed_date is None:
@@ -31,11 +30,20 @@ class Gspread():
             return self.sheet.find(str(passed_date))
 
     def get_slots(self, date):
+        ls = ["8-11", "11-14", "14-17", "17-20"]
+        slots_list = []
 
-        ls = ["8-11", "11-2", "2-5", "5-8"]
+        today = datetime.datetime.now()
+        cur_hour = today.time().hour
+
+        if str(today.date()) == date:
+            for i in range(len(ls)):
+                if cur_hour <= self.time_range[i]:
+                    slots_list.append(ls[i])
+            return slots_list
+        
         cell = self.get_row_col(date)
         parts_list = self.sheet.row_values(cell.row)[2:6]
-        slots_list = []
         for i in enumerate(parts_list):
             if self.part_threshold[i[0]] > int(i[1]):
                 slots_list.append(ls[i[0]])
@@ -57,7 +65,12 @@ class Gspread():
 
         hour_added = int(self.part_time[part]) 
         minute_added = int(part_value) * self.duration
+        
+        today = datetime.datetime.now()
+        cur_hour = today.time().hour
 
-        return datetime.datetime.strptime(date,'%Y-%m-%d') + datetime.timedelta(hours=hour_added,minutes=minute_added)
-        
-        
+        cur = datetime.datetime.strptime(date,'%Y-%m-%d') + datetime.timedelta(hours=hour_added,minutes=minute_added)
+        if str(today.date()) == date and cur_hour < cur.hour:
+            cur = today + datetime.timedelta(minutes=20)
+            
+        return cur
