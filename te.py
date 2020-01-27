@@ -58,15 +58,15 @@ def index():
 #Avaliable time slots
 @app.route('/timeslots',methods=['POST','GET'])
 def timeslots():
-    # msg = request.form.get('Memory')
-    # temp = json.loads(msg)
-    # barber = temp['twilio']['collected_data']['schedule_appt']['answers']['booking_selection_1']['answer']
-    # date = temp['twilio']['collected_data']['schedule_appt']['answers']['booking_selection_2']['answer']
-    date = "2020-01-27"
+    msg = request.form.get('Memory')
+    temp = json.loads(msg)
+    barber = temp['twilio']['collected_data']['schedule_appt']['answers']['booking_selection_1']['answer']
+    date = temp['twilio']['collected_data']['schedule_appt']['answers']['booking_selection_2']['answer']
+
     gsp = Gspread(sheet)
     available_slot = gsp.get_slots(date)
-    available_slot = [("Enter" + str(i[0] + 1) +"  "+ i[1] + "\n") for i in enumerate(available_slot)]
-    slots = "".join(available_slot)
+    available_slot = [("Enter " + str(i[0] + 1) +"  "+ i[1] + "\n") for i in enumerate(available_slot)]
+    slots = "Select any of below \n".join(available_slot)
     return make_response(jsonify(helper.create_say_redirect_response(slots,"task://booking_part_1")),200)
 
 # Call the Calendar API
