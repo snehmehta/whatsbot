@@ -1,10 +1,11 @@
-import datetime 
+import datetime
+
 
 class Gspread():
 
-    def __init__(self,sheet):
+    def __init__(self, sheet, duration=20):
         self.sheet = sheet
-
+        self.duration = duration
         self.part_threshold = [10, 10, 10, 10]
 
         self.part_dict = {
@@ -13,22 +14,26 @@ class Gspread():
             "part3": "E",
             "part4": "F",
         }
+        self.part_time = {
+            "part1": "8",
+            "part2": "11",
+            "part3": "14",
+            "part4": "17",
+        }
 
-    def get_row_col(self,passed_date=None):
+    def get_row_col(self, passed_date=None):
 
         if passed_date is None:
             today = datetime.date.today()
-            cell = self.sheet.find(str(today))
-            return cell
-        else:
-            # Find date which is passed 
-            print("working on it")
-            pass
+            return self.sheet.find(str(today))
 
-    def get_slots(self):
+        else:
+            return self.sheet.find(str(passed_date))
+
+    def get_slots(self, date):
 
         ls = ["8-11", "11-2", "2-5", "5-8"]
-        cell = self.get_row_col()
+        cell = self.get_row_col(date)
         parts_list = self.sheet.row_values(cell.row)[2:6]
         slots_list = []
         for i in enumerate(parts_list):
@@ -37,16 +42,22 @@ class Gspread():
 
         return slots_list
 
-
-    def add_appointment(self,part,details,barber):
-        # Also add which barber 
-        cell = self.get_row_col()
+    def add_appointment(self, part, details, barber, date):
+        # Also add which barber
+        cell = self.get_row_col(date)
         _row = cell.row if barber == "1" else cell.row + 1
 
         part_cell = self.part_dict[part] + str(_row)
-        parts_1 = self.sheet.acell(part_cell).value
+        part_value = self.sheet.acell(part_cell).value
 
         len_row = self.sheet.row_values(_row)
 
         self.sheet.update_cell(_row, (len(len_row) + 1), details)
-        self.sheet.update_acell(part_cell, str(int(parts_1)+1))
+        self.sheet.update_acell(part_cell, str(int(part_value)+1))
+
+        hour_added = int(self.part_time[part]) 
+        minute_added = int(part_value) * self.duration
+
+        return datetime.datetime.strptime(date,'%Y-%m-%d') + datetime.timedelta(hours=hour_added,minutes=minute_added)
+        
+        

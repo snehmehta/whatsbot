@@ -3,17 +3,30 @@ import pickle
 import datefinder
 import os.path
 import json
+import helper
+import gspread
+import datetime
+import string
 
+from sheets import Gspread
 from flask import Flask,request,jsonify,make_response,Response
 from datetime import timedelta
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
-from twilio.twiml.messaging_response import MessagingResponse
-import helper
-# from IPython.core.debugger import set_trace
+from oauth2client.service_account import ServiceAccountCredentials
+from IPython.core.debugger import set_trace
 
 app = Flask(__name__)
+
+scope = ["https://www.googleapis.com/auth/drive"]
+
+creds = ServiceAccountCredentials.from_json_keyfile_name(
+    "Whatsbot-58a18b101200.json", scopes=scope)
+
+client = gspread.authorize(creds)
+all_sheet = client.open("Whatsbot appointment")
+sheet = all_sheet.worksheet("Sheet1")
 
 
 SCOPES = ['https://www.googleapis.com/auth/calendar']
@@ -42,15 +55,32 @@ service = build('calendar', 'v3', credentials=creds)
 def index():
     return '<H1>Calendar</H1'
 
+#Avaliable time slots
+@app.route('/timeslots',methods=['POST','GET'])
+def timeslots():
+    msg = request.form.get('Memory')
+    temp = json.loads(msg)
+    barber = temp['twilio']['collected_data']['schedule_appt']['answers']['booking_selection_1']['answer']
+    date = temp['twilio']['collected_data']['schedule_appt']['answers']['booking_selection_2']['answer']
+
+    gsp = Gspread(sheet)
+    available_slot = gsp.get_slots(date)
+    available_slot = [(str(i[0] + 1) +"  "+ i[1] + "\n") for i in enumerate(available_slot)]
+    slots = "".join(available_slot)
+    return make_response(jsonify(helper.create_say_redirect_response(slots,"task://booking_part_1")),200)
+
 # Call the Calendar API
-@app.route('/eventList',methods=['POST'])
+@app.route('/eventList',methods=['POST','GET'])
 def get_event():
-    now = datetime.datetime.utcnow().isoformat() + 'Z'  # 'Z' indicates UTC time
+    timzone = datetime.datetime.utcnow()
+
+    now = datetime.datetime(timzone.year,timzone.month,timzone.day,timzone.hour,timzone.minute,timzone.second).isoformat() + 'Z'  # 'Z' indicates UTC time
+    end = datetime.datetime(timzone.year,timzone.month,timzone.day,20,00,00).isoformat() + 'Z'
+
     event_list = []
-    print('Getting the upcoming 10 events')
     events_result = service.events().list(calendarId='primary', timeMin=now,
-                                          maxResults=10, singleEvents=True,
-                                          orderBy='startTime').execute()
+                                          timeMax=end, singleEvents=True,
+                                          orderBy='startTime',timeZone=str(timzone.tzname)).execute()
     events = events_result.get('items', [])
 
     if not events:
@@ -58,29 +88,38 @@ def get_event():
     for event in events:
         start = event['start'].get('dateTime', event['start'].get('date'))
         event_list.append(event['summary'])
-    
-    return make_response(jsonify(helper.create_say_response("hye")),200)
+
+    return make_response(jsonify(helper.create_say_response(event_list)),200)
  
 @app.route('/eventCreate',methods=['Post'])
 def create_event():
+
     msg = request.form.get('Memory')
     temp = json.loads(msg)
-    time = temp['twilio']['collected_data']['schedule_appt']['answers']['appt_time']['answer']
-    date =  temp['twilio']['collected_data']['schedule_appt']['answers']['appt_date']['answer']
-    phone_number =  temp['twilio']['collected_data']['schedule_appt']['answers']['appt_phone_number']['answer']
-    cur_phone = request.form.get('UserIdentifier')
+    # set_trace()
+    date =  temp['twilio']['collected_data']['schedule_appt']['answers']['booking_selection_2']['answer']
+    part_number = temp['twilio']['collected_data']['collect_timeslot']['answers']['selected_timeSlot']['answer']
+    barber = temp['twilio']['collected_data']['schedule_appt']['answers']['booking_selection_1']['answer']
 
-    start_time_str = date + " " + time
     token = helper.random_token()
-    summary = "Appointment " + str(phone_number) + " " + str(token)
+
+    part_selected = "part" + part_number 
+    gsp = Gspread(sheet)
+    start_time = gsp.add_appointment(part_selected,token,barber,date)
+
+    # time = str(date_time.time())
+    # date = str(date_time.date())
+    # start_time_str = date + " " + time
+    # print()
+    summary = "Appointment " + " " + str(token)
     
-    duration=30
+    duration=20
     description=None
     location=None
 
     # matches = list(datefinder.find_dates(start_time_str))
     # if len(matches):
-    start_time = datetime.datetime.strptime(start_time_str, '%Y-%m-%d %H:%M')
+    # start_time = datetime.datetime.strptime(start_time_str, '%Y-%m-%d %H:%M')
     end_time = start_time + timedelta(minutes=duration)
 
     event = {
@@ -104,7 +143,7 @@ def create_event():
     }
     iscompleted = service.events().insert(calendarId='primary', body=event).execute()
     if iscompleted:
-        message = "Your token is : " + token
+        message = "Your token is : " + token + "\nYour time is :" + str(start_time.time()) 
         return make_response(jsonify(helper.create_say_response(message)),200)
     else:
         return make_response(jsonify(helper.create_say_response("Sorry failed")),200)
