@@ -71,7 +71,7 @@ class Gspread():
         
         today = datetime.datetime.now()
         cur_hour = today.time().hour
-
+        print(today)
         cur = datetime.datetime.strptime(date,'%Y-%m-%d') + datetime.timedelta(hours=hour_added,minutes=minute_added)
         if str(today.date()) == date and cur_hour < cur.hour:
             cur = today + datetime.timedelta(minutes=20+int(part_value) * self.duration)
