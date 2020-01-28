@@ -65,7 +65,7 @@ def timeslots():
 
     gsp = Gspread(sheet)
     available_slot = gsp.get_slots(date,barber)
-    available_slot = [("Enter *" + str(i[0] + 1) +"*  "+ i[1] + "☑\n") for i in enumerate(available_slot)]
+    available_slot = [("Enter *" + str(i[0] + 1) +"*  "+ i[1] + " ☑\n") for i in enumerate(available_slot)]
     slots = "".join(available_slot)
     return make_response(jsonify(helper.create_say_redirect_response(slots,"task://booking_part_1")),200)
 

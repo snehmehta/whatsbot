@@ -1,4 +1,5 @@
 import datetime
+import helper 
 
 class Gspread():
 
@@ -23,7 +24,8 @@ class Gspread():
     def get_row_col(self, passed_date=None):
 
         if passed_date is None:
-            today = datetime.date.today()
+            today = helper.cur_time()
+            today = today.date()
             return self.sheet.find(str(today))
 
         else:
@@ -34,7 +36,7 @@ class Gspread():
         ls = ["8-11", "11-14", "14-17", "17-20"]
         slots_list = []
 
-        today = datetime.datetime.now()
+        today = helper.cur_time()
         cur_hour = today.time().hour
 
         cell = self.get_row_col(date)
@@ -69,7 +71,7 @@ class Gspread():
         hour_added = int(self.part_time[part]) 
         minute_added = int(part_value) * self.duration
         
-        today = datetime.datetime.now()
+        today = helper.cur_time()
         cur_hour = today.time().hour
         print(today)
         cur = datetime.datetime.strptime(date,'%Y-%m-%d') + datetime.timedelta(hours=hour_added,minutes=minute_added)

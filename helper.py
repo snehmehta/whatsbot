@@ -64,5 +64,6 @@ def create_collect_redirect_response(say, redirect):
     }
     return response
 
+
 def random_token():
     return ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(6))
