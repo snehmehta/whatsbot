@@ -15,7 +15,7 @@ from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from oauth2client.service_account import ServiceAccountCredentials
-from IPython.core.debugger import set_trace
+
 
 app = Flask(__name__)
 
@@ -64,9 +64,9 @@ def timeslots():
     date = temp['twilio']['collected_data']['schedule_appt']['answers']['booking_selection_2']['answer']
 
     gsp = Gspread(sheet)
-    available_slot = gsp.get_slots(date)
+    available_slot = gsp.get_slots(date,barber)
     available_slot = [("Enter " + str(i[0] + 1) +"  "+ i[1] + "\n") for i in enumerate(available_slot)]
-    slots = "Select any of below \n".join(available_slot)
+    slots = "".join(available_slot)
     return make_response(jsonify(helper.create_say_redirect_response(slots,"task://booking_part_1")),200)
 
 # Call the Calendar API
@@ -103,17 +103,19 @@ def create_event():
 
     token = helper.random_token()
 
-    part_selected = "part" + part_number 
     gsp = Gspread(sheet)
+
+    available_slot = gsp.get_slots(date,barber)
+    part_selected = available_slot[int(part_number)-1]
+
+    duration=20
+    description=None
+    location=None
 
     start_time = gsp.add_appointment(part_selected,token,barber,date)
     end_time = start_time + timedelta(minutes=duration)
 
-    summary = "Appointment " + " " + str(token)
-    
-    duration=20
-    description=None
-    location=None
+    summary = barber + " " + str(token) 
 
     event = {
         'summary': summary,
