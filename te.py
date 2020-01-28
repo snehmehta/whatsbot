@@ -65,7 +65,7 @@ def timeslots():
 
     gsp = Gspread(sheet)
     available_slot = gsp.get_slots(date,barber)
-    available_slot = [("Enter " + str(i[0] + 1) +"  "+ i[1] + "\n") for i in enumerate(available_slot)]
+    available_slot = [("Enter *" + str(i[0] + 1) +"*  "+ i[1] + "☑\n") for i in enumerate(available_slot)]
     slots = "".join(available_slot)
     return make_response(jsonify(helper.create_say_redirect_response(slots,"task://booking_part_1")),200)
 
@@ -139,7 +139,7 @@ def create_event():
     iscompleted = service.events().insert(calendarId='primary', body=event).execute()
     if iscompleted:
         message = "Your token is : " + token + "\nYour time is :" + str(start_time.time()) + "\n Date is : " + date
-        return make_response(jsonify(helper.create_say_response(message)),200)
+        return make_response(jsonify(helper.create_say_redirect_response(message,"task://goodbye")),200)
     else:
         return make_response(jsonify(helper.create_say_response("Sorry failed")),200)
 
