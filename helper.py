@@ -5,16 +5,17 @@ import datetime
 
 
 def cur_time():
-
     from_zone = tz.gettz('UTC')
     to_zone = tz.gettz('Asia/Kolkata')
-
     utc = datetime.datetime.utcnow()
-
     utc = utc.replace(tzinfo=from_zone)
+    return utc.astimezone(to_zone)
 
-    central = utc.astimezone(to_zone)
-    return central
+
+def convert_timezone(date_time):
+
+    to_zone = tz.gettz('Asia/Kolkata')
+    return date_time.astimezone(to_zone)
 
 
 def create_say_response(say):

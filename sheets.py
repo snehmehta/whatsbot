@@ -1,5 +1,6 @@
 import datetime
-import helper 
+import helper
+from IPython.core.debugger import set_trace
 
 class Gspread():
 
@@ -20,7 +21,8 @@ class Gspread():
             "14-17": "14",
             "17-20": "17",
         }
-        self.time_range = [11,14,17,20]
+        self.time_range = [11, 14, 17, 20]
+
     def get_row_col(self, passed_date=None):
 
         if passed_date is None:
@@ -44,11 +46,12 @@ class Gspread():
         parts_list = self.sheet.row_values(_row)[2:6]
 
         if str(today.date()) == date:
-            for j,i in zip(range(len(ls)),enumerate(parts_list)):
-                if cur_hour <= self.time_range[j] and self.part_threshold[i[0]] > int(i[1]):
+            for j, i in zip(range(len(ls)), enumerate(parts_list)):
+                num_book = i[1].split('-')[0]
+                if cur_hour < self.time_range[j] and self.part_threshold[i[0]] > int(num_book):
                     slots_list.append(ls[j])
             return slots_list
-        
+
         for i in enumerate(parts_list):
             if self.part_threshold[i[0]] > int(i[1]):
                 slots_list.append(ls[i[0]])
@@ -61,21 +64,41 @@ class Gspread():
         _row = cell.row if barber == "1" else cell.row + 1
 
         part_cell = self.part_dict[part] + str(_row)
-        part_value = self.sheet.acell(part_cell).value
+        temp = self.sheet.acell(part_cell).value
+        part_value = temp.split("-")[0]  # get number of booking done uptil now
 
         len_row = self.sheet.row_values(_row)
 
+        # enter details to last + 1 cell
         self.sheet.update_cell(_row, (len(len_row) + 1), details)
-        self.sheet.update_acell(part_cell, str(int(part_value)+1))
 
-        hour_added = int(self.part_time[part]) 
+        hour_added = int(self.part_time[part])
         minute_added = int(part_value) * self.duration
-        
-        today = helper.cur_time()
-        cur_hour = today.time().hour
-        print(today)
-        cur = datetime.datetime.strptime(date,'%Y-%m-%d') + datetime.timedelta(hours=hour_added,minutes=minute_added)
-        if str(today.date()) == date and cur_hour < cur.hour:
-            cur = today + datetime.timedelta(minutes=20+int(part_value) * self.duration)
-            
-        return cur
+
+        cur_time = helper.cur_time()
+        cur_time = cur_time + datetime.timedelta(minutes=10)
+        print(cur_time)
+        given_time = datetime.datetime.strptime(
+            date, '%Y-%m-%d') + datetime.timedelta(hours=hour_added, minutes=minute_added)
+        # self.sheet.update_acell(part_cell, str(
+        #     int(part_value)+1) + "-" + str(given_time.time()))  # update vjalue
+        given_time = helper.convert_timezone(given_time)
+
+        if str(cur_time.date()) == date and given_time < cur_time:
+
+            temp = self.sheet.acell(part_cell).value
+            last_time = temp.split("-")[1]
+            last_hour = int(last_time.split(":")[0])
+            last_minute = int(last_time.split(":")[1])
+            last_date_time = datetime.datetime(
+                cur_time.year, cur_time.month, cur_time.day, last_hour, last_minute)
+            given_time = last_date_time + datetime.timedelta(minutes=20)
+            given_time = helper.convert_timezone(given_time)
+            # set_trace()s
+            if given_time < cur_time:
+                given_time = cur_time + datetime.timedelta(minutes=20)
+
+        self.sheet.update_acell(part_cell, str(
+            int(part_value)+1) + "-" + str(given_time.time()))  # update value
+
+        return given_time

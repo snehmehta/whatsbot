@@ -100,19 +100,19 @@ def create_event():
     date =  temp['twilio']['collected_data']['schedule_appt']['answers']['booking_selection_2']['answer']
     part_number = temp['twilio']['collected_data']['collect_timeslot']['answers']['selected_timeSlot']['answer']
     barber = temp['twilio']['collected_data']['schedule_appt']['answers']['booking_selection_1']['answer']
-
+    user = request.form.get('UserIdentifier')
+    msg = helper.random_token() + ":" + user
     token = helper.random_token()
-
     gsp = Gspread(sheet)
 
     available_slot = gsp.get_slots(date,barber)
     part_selected = available_slot[int(part_number)-1]
 
     duration=20
-    description=None
+    description=user
     location=None
 
-    start_time = gsp.add_appointment(part_selected,token,barber,date)
+    start_time = gsp.add_appointment(part_selected,msg,barber,date)
     end_time = start_time + timedelta(minutes=duration)
 
     summary = barber + " " + str(token) 
