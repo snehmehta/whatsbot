@@ -53,7 +53,8 @@ class Gspread():
             return slots_list
 
         for i in enumerate(parts_list):
-            if self.part_threshold[i[0]] > int(i[1]):
+            num_book = i[1].split('-')[0]
+            if self.part_threshold[i[0]] > num_book:
                 slots_list.append(ls[i[0]])
 
         return slots_list
