@@ -66,39 +66,40 @@ class Gspread():
         part_cell = self.part_dict[part] + str(_row)
         temp = self.sheet.acell(part_cell).value
         part_value = temp.split("-")[0]  # get number of booking done uptil now
-
+        part_last_value = temp.split("-")[1]
         len_row = self.sheet.row_values(_row)
 
         # enter details to last + 1 cell
         self.sheet.update_cell(_row, (len(len_row) + 1), details)
 
-        hour_added = int(self.part_time[part])
-        minute_added = int(part_value) * self.duration
+        hour_added = int(part_last_value.split(":")[0])
+        minute_added = int(part_last_value.split(":")[0])
 
         cur_time = helper.cur_time()
-        cur_time = cur_time + datetime.timedelta(minutes=10)
-        print(cur_time)
-        given_time = datetime.datetime.strptime(
+        last_given_time = datetime.datetime.strptime(
             date, '%Y-%m-%d') + datetime.timedelta(hours=hour_added, minutes=minute_added)
-        # self.sheet.update_acell(part_cell, str(
-        #     int(part_value)+1) + "-" + str(given_time.time()))  # update vjalue
-        given_time = helper.convert_timezone(given_time)
+        next_given_time = last_given_time + datetime.timedelta(minutes=20)
+        next_given_time = helper.convert_timezone(next_given_time)
 
-        if str(cur_time.date()) == date and given_time < cur_time:
+        print(cur_time,last_given_time,next_given_time)
 
-            temp = self.sheet.acell(part_cell).value
-            last_time = temp.split("-")[1]
-            last_hour = int(last_time.split(":")[0])
-            last_minute = int(last_time.split(":")[1])
-            last_date_time = datetime.datetime(
-                cur_time.year, cur_time.month, cur_time.day, last_hour, last_minute)
-            given_time = last_date_time + datetime.timedelta(minutes=20)
-            given_time = helper.convert_timezone(given_time)
+        if str(cur_time.date()) == date and next_given_time < cur_time:
+
+            next_given_time = cur_time + datetime.timedelta(minutes=20)
+            next_given_time = helper.convert_timezone(next_given_time)
+            print("TOday:",cur_time,last_given_time,next_given_time)
+
+            # temp = self.sheet.acell(part_cell).value
+            # last_time = temp.split("-")[1]
+            # last_hour = int(last_time.split(":")[0])
+            # last_minute = int(last_time.split(":")[1])
+            # last_date_time = datetime.datetime(
+            #     cur_time.year, cur_time.month, cur_time.day, last_hour, last_minute)
             # set_trace()s
-            if given_time < cur_time:
-                given_time = cur_time + datetime.timedelta(minutes=20)
+            # if given_time < cur_time:
+            #     given_time = cur_time + datetime.timedelta(minutes=20)
 
         self.sheet.update_acell(part_cell, str(
-            int(part_value)+1) + "-" + str(given_time.time()))  # update value
+            int(part_value)+1) + "-" + str(next_given_time.time()))  # update value
 
-        return given_time
+        return next_given_time
