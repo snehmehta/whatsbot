@@ -63,18 +63,19 @@ class Gspread():
 
         cell = self.get_row_col(date)
         _row = cell.row if barber == "1" else cell.row + 1
+        len_row = self.sheet.row_values(_row)
 
         part_cell = self.part_dict[part] + str(_row)
         temp = self.sheet.acell(part_cell).value
         part_value = temp.split("-")[0]  # get number of booking done uptil now
         part_last_value = temp.split("-")[1]
-        len_row = self.sheet.row_values(_row)
+        print(_row,len(len_row),part_last_value)
 
         # enter details to last + 1 cell
         self.sheet.update_cell(_row, (len(len_row) + 1), details)
 
         hour_added = int(part_last_value.split(":")[0])
-        minute_added = int(part_last_value.split(":")[0])
+        minute_added = int(part_last_value.split(":")[1])
 
         cur_time = helper.cur_time()
         last_given_time = datetime.datetime.strptime(
