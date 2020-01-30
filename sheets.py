@@ -81,7 +81,7 @@ class Gspread():
         last_given_time = datetime.datetime.strptime(
             date, '%Y-%m-%d') + datetime.timedelta(hours=hour_added, minutes=minute_added)
         next_given_time = last_given_time + datetime.timedelta(minutes=20)
-        next_given_time = helper.convert_timezone(next_given_time)
+        next_given_time = helper.to_utc(next_given_time)
 
         print(cur_time,last_given_time,next_given_time)
 
@@ -90,16 +90,6 @@ class Gspread():
             next_given_time = cur_time + datetime.timedelta(minutes=20)
             next_given_time = helper.convert_timezone(next_given_time)
             print("TOday:",cur_time,last_given_time,next_given_time)
-
-            # temp = self.sheet.acell(part_cell).value
-            # last_time = temp.split("-")[1]
-            # last_hour = int(last_time.split(":")[0])
-            # last_minute = int(last_time.split(":")[1])
-            # last_date_time = datetime.datetime(
-            #     cur_time.year, cur_time.month, cur_time.day, last_hour, last_minute)
-            # set_trace()s
-            # if given_time < cur_time:
-            #     given_time = cur_time + datetime.timedelta(minutes=20)
 
         self.sheet.update_acell(part_cell, str(
             int(part_value)+1) + "-" + str(next_given_time.time()))  # update value
