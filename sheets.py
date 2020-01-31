@@ -63,7 +63,7 @@ class Gspread():
 
         cell = self.get_row_col(date)
         _row = cell.row if barber == "1" else cell.row + 1
-        len_row = self.sheet.row_values(_row)
+        len_row = self.sheet.row_values(_row) 
 
         part_cell = self.part_dict[part] + str(_row)
         temp = self.sheet.acell(part_cell).value
