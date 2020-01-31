@@ -9,7 +9,7 @@ import datetime
 import string
 
 from sheets import Gspread
-from flask import Flask,request,jsonify,make_response,Response
+from flask import Flask, request, jsonify, make_response, Response
 from datetime import timedelta
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -55,8 +55,8 @@ service = build('calendar', 'v3', credentials=creds)
 def index():
     return '<H1>Calendar</H1'
 
-#Avaliable time slots
-@app.route('/timeslots',methods=['POST','GET'])
+# Avaliable time slots
+@app.route('/timeslots', methods=['POST', 'GET'])
 def timeslots():
     msg = request.form.get('Memory')
     temp = json.loads(msg)
@@ -64,23 +64,26 @@ def timeslots():
     date = temp['twilio']['collected_data']['schedule_appt']['answers']['booking_selection_2']['answer']
 
     gsp = Gspread(sheet)
-    available_slot = gsp.get_slots(date,barber)
-    available_slot = [("Enter *" + str(i[0] + 1) +"*  "+ i[1] + " ☑\n") for i in enumerate(available_slot)]
+    available_slot = gsp.get_slots(date, barber)
+    available_slot = [("Enter *" + str(i[0] + 1) + "*  " + i[1] + " ☑\n")
+                      for i in enumerate(available_slot)]
     slots = "".join(available_slot)
-    return make_response(jsonify(helper.create_say_redirect_response(slots,"task://booking_part_1")),200)
+    return make_response(jsonify(helper.create_say_redirect_response(slots, "task://booking_part_1")), 200)
 
 # Call the Calendar API
-@app.route('/eventList',methods=['POST','GET'])
+@app.route('/eventList', methods=['POST', 'GET'])
 def get_event():
     timzone = datetime.datetime.utcnow()
 
-    now = datetime.datetime(timzone.year,timzone.month,timzone.day,timzone.hour,timzone.minute,timzone.second).isoformat() + 'Z'  # 'Z' indicates UTC time
-    end = datetime.datetime(timzone.year,timzone.month,timzone.day,20,00,00).isoformat() + 'Z'
+    now = datetime.datetime(timzone.year, timzone.month, timzone.day, timzone.hour,
+                            timzone.minute, timzone.second).isoformat() + 'Z'  # 'Z' indicates UTC time
+    end = datetime.datetime(timzone.year, timzone.month,
+                            timzone.day, 20, 00, 00).isoformat() + 'Z'
 
     event_list = []
     events_result = service.events().list(calendarId='primary', timeMin=now,
                                           timeMax=end, singleEvents=True,
-                                          orderBy='startTime',timeZone=str(timzone.tzname)).execute()
+                                          orderBy='startTime', timeZone=str(timzone.tzname)).execute()
     events = events_result.get('items', [])
 
     if not events:
@@ -89,15 +92,16 @@ def get_event():
         start = event['start'].get('dateTime', event['start'].get('date'))
         event_list.append(event['summary'])
 
-    return make_response(jsonify(helper.create_say_response(event_list)),200)
- 
-@app.route('/eventCreate',methods=['Post'])
+    return make_response(jsonify(helper.create_say_response(event_list)), 200)
+
+
+@app.route('/eventCreate', methods=['Post'])
 def create_event():
 
     msg = request.form.get('Memory')
     temp = json.loads(msg)
 
-    date =  temp['twilio']['collected_data']['schedule_appt']['answers']['booking_selection_2']['answer']
+    date = temp['twilio']['collected_data']['schedule_appt']['answers']['booking_selection_2']['answer']
     part_number = temp['twilio']['collected_data']['collect_timeslot']['answers']['selected_timeSlot']['answer']
     barber = temp['twilio']['collected_data']['schedule_appt']['answers']['booking_selection_1']['answer']
     user = request.form.get('UserIdentifier')
@@ -105,17 +109,17 @@ def create_event():
     token = helper.random_token()
     gsp = Gspread(sheet)
 
-    available_slot = gsp.get_slots(date,barber)
+    available_slot = gsp.get_slots(date, barber)
     part_selected = available_slot[int(part_number)-1]
 
-    duration=20
-    description=user
-    location=None
+    duration = 20
+    description = user
+    location = None
 
-    start_time = gsp.add_appointment(part_selected,msg,barber,date)
+    start_time = gsp.add_appointment(part_selected, msg, barber, date)
     end_time = start_time + timedelta(minutes=duration)
 
-    summary = barber + " " + str(token) 
+    summary = barber + " " + str(token)
 
     event = {
         'summary': summary,
@@ -138,11 +142,12 @@ def create_event():
     }
     iscompleted = service.events().insert(calendarId='primary', body=event).execute()
     if iscompleted:
-        message = "Your token is : " + token + "\nYour time is :" + str(start_time.time()) + "\n Date is : " + date
-        return make_response(jsonify(helper.create_say_redirect_response(message,"task://goodbye")),200)
+        message = "Your token is : " + token + "\nYour time is :" + \
+            str(start_time.time()) + "\n Date is : " + date
+        return make_response(jsonify(helper.create_say_redirect_response(message, "task://goodbye")), 200)
     else:
-        return make_response(jsonify(helper.create_say_response("Sorry failed")),200)
+        return make_response(jsonify(helper.create_say_response("Sorry failed")), 200)
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run()

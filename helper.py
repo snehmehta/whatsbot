@@ -11,6 +11,7 @@ def cur_time():
     utc = utc.replace(tzinfo=from_zone)
     return utc.astimezone(to_zone)
 
+
 def to_utc(date_time):
     from_zone = tz.gettz('UTC')
     return date_time.replace(tzinfo=from_zone)
@@ -20,7 +21,7 @@ def convert_timezone(date_time):
     set_trace()
     to_zone = tz.gettz('Asia/Kolkata')
     return date_time.astimezone(to_zone)
-    
+
 
 def create_say_response(say):
     response = {

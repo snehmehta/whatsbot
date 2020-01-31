@@ -2,6 +2,7 @@ import datetime
 import helper
 from IPython.core.debugger import set_trace
 
+
 class Gspread():
 
     def __init__(self, sheet, duration=20):
@@ -63,16 +64,13 @@ class Gspread():
 
         cell = self.get_row_col(date)
         _row = cell.row if barber == "1" else cell.row + 1
-        len_row = self.sheet.row_values(_row) 
+        len_row = self.sheet.row_values(_row)
 
         part_cell = self.part_dict[part] + str(_row)
         temp = self.sheet.acell(part_cell).value
         part_value = temp.split("-")[0]  # get number of booking done uptil now
         part_last_value = temp.split("-")[1]
-        print(_row,len(len_row),part_last_value)
-
-        # enter details to last + 1 cell
-        self.sheet.update_cell(_row, (len(len_row) + 1), details)
+        print(_row, len(len_row), part_last_value)
 
         hour_added = int(part_last_value.split(":")[0])
         minute_added = int(part_last_value.split(":")[1])
@@ -83,15 +81,19 @@ class Gspread():
         next_given_time = last_given_time + datetime.timedelta(minutes=20)
         next_given_time = helper.to_utc(next_given_time)
 
-        print(cur_time,last_given_time,next_given_time)
+        print(cur_time, last_given_time, next_given_time)
 
-        if str(cur_time.date()) == date and next_given_time < cur_time:
+        if str(cur_time.date()) == date and next_given_time.time() < cur_time.time():
 
             next_given_time = cur_time + datetime.timedelta(minutes=20)
             next_given_time = helper.convert_timezone(next_given_time)
-            print("TOday:",cur_time,last_given_time,next_given_time)
+            print("TOday:", cur_time, last_given_time, next_given_time)
 
         self.sheet.update_acell(part_cell, str(
             int(part_value)+1) + "-" + str(next_given_time.time()))  # update value
+
+        # enter details to last + 1 cell
+        self.sheet.update_cell(_row, (len(len_row) + 1),
+                               details + str(next_given_time.time()))
 
         return next_given_time
