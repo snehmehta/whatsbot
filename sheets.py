@@ -1,6 +1,5 @@
 import datetime
 import helper
-from IPython.core.debugger import set_trace
 
 
 class Gspread():

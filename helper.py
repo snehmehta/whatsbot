@@ -18,7 +18,7 @@ def to_utc(date_time):
 
 
 def convert_timezone(date_time):
-    set_trace()
+
     to_zone = tz.gettz('Asia/Kolkata')
     return date_time.astimezone(to_zone)
 
