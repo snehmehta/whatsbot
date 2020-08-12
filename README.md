@@ -1,3 +1,6 @@
 # whatsbot
-## whatsbot: whatsapp appointment booking
-### All data are stored google sheets and google calender. 
+### whatsbot: whatsapp appointment booking
+- All data are stored google sheets 
+- google calender. 
+- Hosted Heroku
+- Twilio for whatsapp 
