@@ -34,4 +34,4 @@ twilio==6.35.2
 uritemplate==3.0.1
 urllib3==1.25.7
 wcwidth==0.1.8
-Werkzeug==0.16.0
+Werkzeug==2.2.3
